@@ -1,0 +1,98 @@
+<Window x:Class="K162.App.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:core="clr-namespace:K162.Core;assembly=K162.Core"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="Settings" Width="520" SizeToContent="Height"
+        Background="{StaticResource AppBrush}" Foreground="{StaticResource TextBodyBrush}"
+        FontFamily="{StaticResource UiFont}"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False">
+
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="34" ResizeBorderThickness="0"
+                            GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
+    </shell:WindowChrome.WindowChrome>
+
+    <Border BorderThickness="1" BorderBrush="{StaticResource Accent30Brush}">
+        <StackPanel>
+            <!-- Mini title bar -->
+            <Grid Height="34" Background="{StaticResource ChromeBrush}">
+                <TextBlock Margin="12,0,0,0" VerticalAlignment="Center"
+                           FontFamily="{StaticResource MonoFont}" FontSize="11"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Text="SETTINGS"/>
+                <Button HorizontalAlignment="Right" Style="{StaticResource ChromeCloseButton}" Content="✕"
+                        Height="34" Click="Close_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
+            </Grid>
+
+            <StackPanel Margin="20,16,20,20">
+                <!-- Alerts -->
+                <TextBlock Style="{StaticResource MonoLabel}" Text="ALERTS"/>
+                <CheckBox Margin="0,10,0,0" Foreground="{StaticResource TextBodyBrush}" FontSize="13"
+                          IsChecked="{Binding Settings.SoundEnabled}" Content="Sound pings (jump + kill alerts)"/>
+                <DockPanel Margin="0,12,0,0">
+                    <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" FontSize="13"
+                               Text="Wake Watch hold time"/>
+                    <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" MinWidth="52"
+                               TextAlignment="Right" FontFamily="{StaticResource MonoFont}" FontSize="12"
+                               Foreground="{StaticResource AccentBrush}">
+                        <Run Text="{Binding Settings.HoldMinutes}"/><Run Text=" min"/>
+                    </TextBlock>
+                    <Slider Margin="14,0" VerticalAlignment="Center" Minimum="1" Maximum="60"
+                            IsSnapToTickEnabled="True" TickFrequency="1"
+                            Value="{Binding Settings.HoldMinutes}"/>
+                </DockPanel>
+
+                <!-- Intel -->
+                <TextBlock Margin="0,22,0,0" Style="{StaticResource MonoLabel}" Text="INTEL"/>
+                <DockPanel Margin="0,10,0,0">
+                    <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" FontSize="13"
+                               Text="Resident lookback window"/>
+                    <ComboBox DockPanel.Dock="Right" HorizontalAlignment="Right" MinWidth="140"
+                              SelectedItem="{Binding Settings.Lookback}">
+                        <ComboBox.ItemsSource>
+                            <x:Array Type="core:Lookback">
+                                <core:Lookback>FortyEightHours</core:Lookback>
+                                <core:Lookback>TwoWeeks</core:Lookback>
+                                <core:Lookback>ThreeMonths</core:Lookback>
+                            </x:Array>
+                        </ComboBox.ItemsSource>
+                    </ComboBox>
+                </DockPanel>
+
+                <!-- ESI -->
+                <TextBlock Margin="0,22,0,0" Style="{StaticResource MonoLabel}" Text="EVE SSO"/>
+                <TextBlock Margin="0,8,0,0" FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                           Text="Client id (developers.eveonline.com)"/>
+                <TextBox Margin="0,4,0,0" Style="{StaticResource DarkTextBox}"
+                         Text="{Binding Settings.EsiClientId, UpdateSourceTrigger=PropertyChanged}"/>
+                <TextBlock Margin="0,8,0,0" FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                           Text="Callback port"/>
+                <TextBox Margin="0,4,0,0" Width="120" HorizontalAlignment="Left"
+                         Style="{StaticResource DarkTextBox}"
+                         Text="{Binding Settings.CallbackPort, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <!-- Characters -->
+                <TextBlock Margin="0,22,0,0" Style="{StaticResource MonoLabel}" Text="CHARACTERS"/>
+                <ItemsControl ItemsSource="{Binding Pilots}" Margin="0,8,0,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel Margin="0,0,0,6">
+                                <Button DockPanel.Dock="Right" Style="{StaticResource LinkButton}"
+                                        Foreground="{StaticResource HotBrush}" Content="REMOVE"
+                                        Command="{Binding DataContext.RemoveCharacterCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"/>
+                                <TextBlock FontFamily="{StaticResource MonoFont}" FontSize="12"
+                                           Foreground="{StaticResource TextBrightBrush}" Text="{Binding Name}"/>
+                            </DockPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button Margin="0,6,0,0" HorizontalAlignment="Left" Style="{StaticResource AccentCutButton}"
+                        Content="ADD CHARACTER" Command="{Binding AddCharacterCommand}"/>
+                <TextBlock Margin="0,8,0,0" FontFamily="{StaticResource MonoFont}" FontSize="11"
+                           Foreground="{StaticResource WarmBrush}" TextWrapping="Wrap" Text="{Binding SetupStatus}"/>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>

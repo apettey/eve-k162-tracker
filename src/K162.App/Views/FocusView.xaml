@@ -1,0 +1,350 @@
+<UserControl x:Class="K162.App.Views.FocusView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:K162.App.Controls">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid MaxWidth="1500" Margin="24,18">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ============ Left rail ============ -->
+            <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                <Button Style="{StaticResource OutlineButton}" Content="◄ ALL PILOTS"
+                        HorizontalAlignment="Stretch" Command="{Binding BackToGridCommand}"/>
+                <ItemsControl ItemsSource="{Binding Pilots}" Margin="0,8,0,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Style="{StaticResource InvisibleButton}"
+                                    Command="{Binding DataContext.FocusPilotCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding}"
+                                    Visibility="{Binding Online, Converter={StaticResource BoolToVis}}">
+                            <Border x:Name="RailRow" BorderThickness="1" Padding="12,10" Margin="0,0,0,8"
+                                    Cursor="Hand" Background="{StaticResource CardBrush}"
+                                    BorderBrush="{StaticResource Accent18Brush}">
+                                <DockPanel>
+                                    <Border DockPanel.Dock="Left" Width="34" Height="34"
+                                            BorderThickness="1" BorderBrush="{StaticResource Accent25Brush}"
+                                            Background="{StaticResource Accent04Brush}">
+                                        <Image Source="{Binding PortraitUrl}" Stretch="UniformToFill"/>
+                                    </Border>
+                                    <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                                        <DockPanel>
+                                            <TextBlock DockPanel.Dock="Left" FontSize="14" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextBrightBrush}" Text="{Binding Name}"/>
+                                            <Ellipse x:Name="ThreatDot" DockPanel.Dock="Right" HorizontalAlignment="Right"
+                                                     Width="8" Height="8" VerticalAlignment="Center"
+                                                     Fill="{Binding Threat, Converter={StaticResource ThreatBrush}}"/>
+                                        </DockPanel>
+                                        <TextBlock Margin="0,2,0,0" FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                                   Foreground="{StaticResource TextMutedBrush}" Text="{Binding RailLine}"/>
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                            </Button>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                    <Setter TargetName="RailRow" Property="BorderBrush" Value="{StaticResource Accent60Brush}"/>
+                                    <Setter TargetName="RailRow" Property="Background" Value="{StaticResource Accent06Brush}"/>
+                                </DataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsSelected}" Value="False"/>
+                                        <Condition Binding="{Binding IsMouseOver, ElementName=RailRow}" Value="True"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter TargetName="RailRow" Property="BorderBrush" Value="{StaticResource Accent60Brush}"/>
+                                </MultiDataTrigger>
+                                <DataTrigger Binding="{Binding Threat}" Value="Hot">
+                                    <DataTrigger.EnterActions>
+                                        <BeginStoryboard x:Name="DotPulse">
+                                            <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                                <DoubleAnimation Storyboard.TargetName="ThreatDot"
+                                                                 Storyboard.TargetProperty="Opacity"
+                                                                 From="1" To="0.45" Duration="0:0:0.6"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.EnterActions>
+                                    <DataTrigger.ExitActions>
+                                        <StopStoryboard BeginStoryboardName="DotPulse"/>
+                                    </DataTrigger.ExitActions>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+            <!-- ============ Main column ============ -->
+            <StackPanel Grid.Column="1" DataContext="{Binding FocusedPilot}">
+
+                <!-- System header panel -->
+                <controls:CutCornerBorder CutSize="14" Padding="18,16"
+                                          Fill="{StaticResource Accent03Brush}"
+                                          Stroke="{StaticResource Accent30Brush}">
+                    <Grid>
+                        <!-- Scan line sweeping the top edge -->
+                        <Canvas Height="1" VerticalAlignment="Top" Margin="-18,-16,-18,0" ClipToBounds="True">
+                            <Rectangle Width="220" Height="1">
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                        <GradientStop Color="#003ECF7A" Offset="0"/>
+                                        <GradientStop Color="#FF3ECF7A" Offset="0.5"/>
+                                        <GradientStop Color="#003ECF7A" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                                <Rectangle.RenderTransform>
+                                    <TranslateTransform X="-220"/>
+                                </Rectangle.RenderTransform>
+                                <Rectangle.Triggers>
+                                    <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                        <BeginStoryboard>
+                                            <Storyboard RepeatBehavior="Forever">
+                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
+                                                                 From="-220" To="1400" Duration="0:0:4"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Rectangle.Triggers>
+                            </Rectangle>
+                        </Canvas>
+
+                        <StackPanel>
+                            <!-- Pilot identity -->
+                            <Border BorderThickness="0,0,0,1" BorderBrush="{StaticResource Accent12Brush}"
+                                    Padding="0,0,0,12" Margin="0,0,0,12">
+                                <StackPanel Orientation="Horizontal">
+                                    <Border Width="56" Height="56" BorderThickness="1"
+                                            BorderBrush="{StaticResource Accent40Brush}"
+                                            Background="{StaticResource Accent04Brush}">
+                                        <Image Source="{Binding PortraitUrl}" Stretch="UniformToFill"/>
+                                    </Border>
+                                    <Border Width="32" Height="32" Margin="12,0,0,0" VerticalAlignment="Center"
+                                            Background="{StaticResource Accent04Brush}">
+                                        <Image Source="{Binding CorpLogoUrl}" Stretch="UniformToFill"/>
+                                    </Border>
+                                    <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock FontSize="19" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextBrightBrush}" Text="{Binding Name}"/>
+                                        <TextBlock FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                                   Foreground="{StaticResource TextMutedBrush}" Text="{Binding ShipCorpLine}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                            <!-- System row -->
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                                    <TextBlock FontFamily="{StaticResource MonoFont}" FontSize="34"
+                                               Foreground="{StaticResource AccentBrush}"
+                                               Text="{Binding SystemName}" VerticalAlignment="Bottom"/>
+                                    <TextBlock Margin="14,0,0,5" FontSize="16" FontWeight="SemiBold"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               Text="{Binding SystemClass}" VerticalAlignment="Bottom"/>
+                                    <TextBlock Margin="14,0,0,6" FontSize="14"
+                                               Foreground="{StaticResource WarmBrush}"
+                                               Text="{Binding Effect}" VerticalAlignment="Bottom"/>
+                                </StackPanel>
+                                <Border DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                        BorderThickness="1" Padding="10,3"
+                                        BorderBrush="{Binding Threat, Converter={StaticResource ThreatBrush}}">
+                                    <TextBlock x:Name="FocusThreatText" FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                               Foreground="{Binding Threat, Converter={StaticResource ThreatBrush}}"
+                                               Text="{Binding FocusThreatLabel}"/>
+                                </Border>
+                            </DockPanel>
+                            <!-- Statics + external links -->
+                            <DockPanel Margin="0,10,0,0">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Style="{StaticResource BorderedLinkButton}" Content="ZKILLBOARD ↗"
+                                            Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding ZkillUrl}"/>
+                                    <Button Style="{StaticResource BorderedLinkButton}" Content="ANOIK.IS ↗" Margin="8,0,0,0"
+                                            Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding AnoikisUrl}"/>
+                                </StackPanel>
+                                <ItemsControl ItemsSource="{Binding Statics}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderThickness="1" BorderBrush="{StaticResource Accent25Brush}"
+                                                    Padding="9,3" Margin="0,0,8,4">
+                                                <TextBlock FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                                           Foreground="{StaticResource TextSecondaryBrush}">
+                                                    <Run Text="{Binding CardText, Mode=OneWay}"/><Run Text=" "/><Run Text="{Binding MassLabel, Mode=OneWay}" Foreground="{StaticResource TextMutedBrush}"/>
+                                                </TextBlock>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </DockPanel>
+                            <!-- Trail -->
+                            <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                                <TextBlock FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Text="TRAIL"/>
+                                <ItemsControl ItemsSource="{Binding Trail}" Margin="6,0,0,0">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock x:Name="TrailText" Margin="0,0,6,0"
+                                                       FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                                       Foreground="{StaticResource TextMutedBrush}" Text="{Binding Text}"/>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                                    <Setter TargetName="TrailText" Property="Foreground" Value="{StaticResource AccentBrush}"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </controls:CutCornerBorder>
+
+                <!-- Panels: recent kills + who lives here -->
+                <Grid Margin="0,14,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.2*"/>
+                        <ColumnDefinition Width="14"/>
+                        <ColumnDefinition Width="1*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Recent kills -->
+                    <Border Grid.Column="0" BorderThickness="1" BorderBrush="{StaticResource Accent18Brush}"
+                            Background="{StaticResource PanelBrush}" VerticalAlignment="Top">
+                        <StackPanel>
+                            <Border BorderThickness="0,0,0,1" BorderBrush="{StaticResource Accent12Brush}" Padding="14,10">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Left" FontSize="13"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               Text="{Binding Source='RECENT KILLS IN SYSTEM', Converter={StaticResource Tracking}, ConverterParameter=2}"/>
+                                    <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right"
+                                               FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                               Foreground="{StaticResource TextMutedBrush}" Text="LAST 48H"/>
+                                </DockPanel>
+                            </Border>
+                            <controls:Sparkline Height="52" Margin="14,10,14,4" Bins="{Binding Bins}" Gap="3"
+                                                ActiveBrush="{StaticResource Accent75Brush}"
+                                                ZeroBrush="{StaticResource Accent12Brush}"/>
+                            <DockPanel Margin="14,0,14,8">
+                                <TextBlock DockPanel.Dock="Left" FontFamily="{StaticResource MonoFont}" FontSize="9"
+                                           Foreground="{StaticResource TextFaintBrush}" Text="-48H"/>
+                                <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right"
+                                           FontFamily="{StaticResource MonoFont}" FontSize="9"
+                                           Foreground="{StaticResource TextFaintBrush}" Text="NOW"/>
+                                <TextBlock HorizontalAlignment="Center" FontFamily="{StaticResource MonoFont}" FontSize="9"
+                                           Foreground="{StaticResource TextFaintBrush}" Text="-24H"/>
+                            </DockPanel>
+                            <ItemsControl ItemsSource="{Binding Kills}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderThickness="0,1,0,0" BorderBrush="{StaticResource Accent08Brush}"
+                                                Padding="14,8">
+                                            <DockPanel>
+                                                <TextBlock DockPanel.Dock="Left" Width="52"
+                                                           FontFamily="{StaticResource MonoFont}" FontSize="12"
+                                                           Foreground="{StaticResource TextMutedBrush}" Text="{Binding TimeText}"/>
+                                                <Border DockPanel.Dock="Left" Width="20" Height="20"
+                                                        Background="{StaticResource Accent04Brush}">
+                                                    <Image Source="{Binding CorpLogoUrl}" Stretch="UniformToFill"/>
+                                                </Border>
+                                                <TextBlock DockPanel.Dock="Left" Width="96" Margin="10,0,0,0"
+                                                           FontFamily="{StaticResource MonoFont}" FontSize="12"
+                                                           Foreground="{StaticResource TextBrightBrush}" Text="{Binding Ship}"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                                <Button DockPanel.Dock="Right" HorizontalAlignment="Right"
+                                                        Style="{StaticResource LinkButton}" Content="zkill ↗"
+                                                        Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding Url}"/>
+                                                <TextBlock DockPanel.Dock="Right" Margin="0,0,10,0" HorizontalAlignment="Right"
+                                                           FontFamily="{StaticResource MonoFont}" FontSize="12"
+                                                           Foreground="{StaticResource TextMutedBrush}" Text="{Binding InvolvedText}"/>
+                                                <TextBlock Margin="0,0,10,0" FontFamily="{StaticResource MonoFont}" FontSize="12"
+                                                           Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding VictimCorp}"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                            </DockPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Who lives here -->
+                    <Border Grid.Column="2" BorderThickness="1" BorderBrush="{StaticResource Accent18Brush}"
+                            Background="{StaticResource PanelBrush}" VerticalAlignment="Top">
+                        <StackPanel>
+                            <Border BorderThickness="0,0,0,1" BorderBrush="{StaticResource Accent12Brush}" Padding="14,10">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Left" FontSize="13"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               Text="{Binding Source='WHO LIVES HERE', Converter={StaticResource Tracking}, ConverterParameter=2}"/>
+                                    <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right"
+                                               FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                               Foreground="{StaticResource TextMutedBrush}"
+                                               Text="{Binding DataContext.LookbackLabel, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                </DockPanel>
+                            </Border>
+                            <ItemsControl ItemsSource="{Binding Residents}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderThickness="0,1,0,0" BorderBrush="{StaticResource Accent08Brush}"
+                                                Padding="14,9">
+                                            <DockPanel>
+                                                <Border DockPanel.Dock="Left" Width="32" Height="32"
+                                                        VerticalAlignment="Top" Background="{StaticResource Accent04Brush}">
+                                                    <Image Source="{Binding LogoUrl}" Stretch="UniformToFill"/>
+                                                </Border>
+                                                <StackPanel Margin="10,0,0,0">
+                                                    <DockPanel>
+                                                        <TextBlock DockPanel.Dock="Left" FontSize="14" FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource TextBrightBrush}">
+                                                            <Run Text="{Binding Name, Mode=OneWay}"/><Run Text=" "/><Run Text="{Binding TickerText, Mode=OneWay}" FontFamily="{StaticResource MonoFont}" FontSize="11" Foreground="{StaticResource AccentBrush}"/>
+                                                        </TextBlock>
+                                                        <Button DockPanel.Dock="Right" HorizontalAlignment="Right"
+                                                                Style="{StaticResource LinkButton}" FontSize="10" Content="zkill ↗"
+                                                                Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                CommandParameter="{Binding Url}"/>
+                                                    </DockPanel>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                        <TextBlock FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                                                   Foreground="{StaticResource TextMutedBrush}" Text="{Binding PilotsText}"/>
+                                                        <TextBlock Margin="14,0,0,0" FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                                                   Foreground="{StaticResource TextMutedBrush}" Text="{Binding KillsText}"/>
+                                                        <TextBlock Margin="14,0,0,0" FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                                                   Foreground="{StaticResource TextMutedBrush}" Text="{Binding TzText}"/>
+                                                        <TextBlock x:Name="LastSeen" Margin="14,0,0,0"
+                                                                   FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                                                   Foreground="{StaticResource TextMutedBrush}" Text="{Binding LastSeenText}"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </DockPanel>
+                                        </Border>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsNow}" Value="True">
+                                                <Setter TargetName="LastSeen" Property="Foreground" Value="{StaticResource HotBrush}"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Border BorderThickness="0,1,0,0" BorderBrush="{StaticResource Accent08Brush}" Padding="14,9">
+                                <TextBlock FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                           Foreground="{StaticResource TextFaintBrush}" Text="{Binding KillsAnalyzedLabel}"/>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

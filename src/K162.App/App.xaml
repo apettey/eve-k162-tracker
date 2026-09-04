@@ -1,0 +1,224 @@
+<Application x:Class="K162.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:K162.App"
+             xmlns:controls="clr-namespace:K162.App.Controls"
+             ShutdownMode="OnMainWindowClose">
+    <Application.Resources>
+
+        <!-- ============ Fonts ============ -->
+        <FontFamily x:Key="UiFont">pack://application:,,,/Assets/Fonts/#Rajdhani, Segoe UI</FontFamily>
+        <FontFamily x:Key="MonoFont">pack://application:,,,/Assets/Fonts/#Share Tech Mono, Consolas</FontFamily>
+
+        <!-- ============ Design tokens ============ -->
+        <SolidColorBrush x:Key="DeskBrush" Color="#FF0D1114"/>
+        <SolidColorBrush x:Key="AppBrush" Color="#FF04080A"/>
+        <SolidColorBrush x:Key="ChromeBrush" Color="#FF10161A"/>
+        <SolidColorBrush x:Key="ChromeBorderBrush" Color="#FF1C2529"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#FF3ECF7A"/>
+        <SolidColorBrush x:Key="AccentBrightBrush" Color="#FF7FE8AB"/>
+        <SolidColorBrush x:Key="WarmBrush" Color="#FFD6A52A"/>
+        <SolidColorBrush x:Key="HotBrush" Color="#FFE0563C"/>
+        <SolidColorBrush x:Key="HotBgBrush" Color="#FF140A08"/>
+        <SolidColorBrush x:Key="Hot30Brush" Color="#4DE0563C"/>
+        <SolidColorBrush x:Key="CloseHoverBrush" Color="#FFC42B1C"/>
+        <SolidColorBrush x:Key="TextBrightBrush" Color="#FFDFF2E6"/>
+        <SolidColorBrush x:Key="TextBodyBrush" Color="#FFB8CFC2"/>
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FF8AA695"/>
+        <SolidColorBrush x:Key="TextMutedBrush" Color="#FF5C7A68"/>
+        <SolidColorBrush x:Key="TextFaintBrush" Color="#FF3D5548"/>
+        <SolidColorBrush x:Key="PanelBrush" Color="#990A120E"/>
+        <SolidColorBrush x:Key="CardBrush" Color="#B3080E0B"/>
+        <SolidColorBrush x:Key="Accent02Brush" Color="#053ECF7A"/>
+        <SolidColorBrush x:Key="Accent03Brush" Color="#083ECF7A"/>
+        <SolidColorBrush x:Key="Accent04Brush" Color="#0A3ECF7A"/>
+        <SolidColorBrush x:Key="Accent06Brush" Color="#0F3ECF7A"/>
+        <SolidColorBrush x:Key="Accent08Brush" Color="#143ECF7A"/>
+        <SolidColorBrush x:Key="Accent12Brush" Color="#1F3ECF7A"/>
+        <SolidColorBrush x:Key="Accent18Brush" Color="#2E3ECF7A"/>
+        <SolidColorBrush x:Key="Accent22Brush" Color="#383ECF7A"/>
+        <SolidColorBrush x:Key="Accent25Brush" Color="#403ECF7A"/>
+        <SolidColorBrush x:Key="Accent30Brush" Color="#4D3ECF7A"/>
+        <SolidColorBrush x:Key="Accent35Brush" Color="#593ECF7A"/>
+        <SolidColorBrush x:Key="Accent40Brush" Color="#663ECF7A"/>
+        <SolidColorBrush x:Key="Accent60Brush" Color="#993ECF7A"/>
+        <SolidColorBrush x:Key="Accent75Brush" Color="#BF3ECF7A"/>
+        <SolidColorBrush x:Key="Accent90Brush" Color="#E63ECF7A"/>
+
+        <!-- ============ Converters ============ -->
+        <local:ThreatToBrushConverter x:Key="ThreatBrush"/>
+        <local:TrackingConverter x:Key="Tracking"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <!-- ============ Reusable animations ============ -->
+        <Storyboard x:Key="HotPulseStoryboard" RepeatBehavior="Forever" AutoReverse="True">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="1" To="0.45" Duration="0:0:0.6"/>
+        </Storyboard>
+
+        <!-- ============ Window caption buttons ============ -->
+        <Style x:Key="ChromeButton" TargetType="Button">
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Arrow"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource ChromeBorderBrush}"/>
+                    <Setter Property="Foreground" Value="{StaticResource TextBrightBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="ChromeCloseButton" TargetType="Button" BasedOn="{StaticResource ChromeButton}">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource CloseHoverBrush}"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- ============ Invisible click wrapper (cards, rail rows) ============ -->
+        <Style x:Key="InvisibleButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <ContentPresenter/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ============ Accent corner-cut button (SIMULATE JUMP / SETTINGS) ============ -->
+        <Style x:Key="AccentCutButton" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <controls:CutCornerBorder x:Name="Shape" CutSize="8" Padding="14,7"
+                                                  Fill="{StaticResource Accent08Brush}"
+                                                  Stroke="{StaticResource Accent40Brush}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </controls:CutCornerBorder>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Shape" Property="Fill" Value="{StaticResource Accent18Brush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ============ Outlined mono button (back button, setup actions) ============ -->
+        <Style x:Key="OutlineButton" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Accent30Brush}"/>
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="Transparent" BorderThickness="1"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource Accent60Brush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- ============ Bordered mono link (ZKILLBOARD / ANOIK.IS) ============ -->
+        <Style x:Key="BorderedLinkButton" TargetType="Button" BasedOn="{StaticResource OutlineButton}">
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Accent35Brush}"/>
+            <Setter Property="Padding" Value="10,3"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource AccentBrightBrush}"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource Accent60Brush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- ============ Inline text link (zkill ↗) ============ -->
+        <Style x:Key="LinkButton" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <TextBlock x:Name="Text" Text="{TemplateBinding Content}"
+                                   Foreground="{TemplateBinding Foreground}"
+                                   FontFamily="{TemplateBinding FontFamily}"
+                                   FontSize="{TemplateBinding FontSize}"/>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Text" Property="Foreground" Value="{StaticResource AccentBrightBrush}"/>
+                                <Setter TargetName="Text" Property="TextDecorations" Value="Underline"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ============ Dark themed inputs for setup/settings ============ -->
+        <Style x:Key="DarkTextBox" TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource ChromeBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextBrightBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Accent25Brush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="CaretBrush" Value="{StaticResource AccentBrush}"/>
+            <Style.Triggers>
+                <Trigger Property="IsFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="{StaticResource Accent60Brush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="MonoLabel" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+        </Style>
+
+    </Application.Resources>
+</Application>

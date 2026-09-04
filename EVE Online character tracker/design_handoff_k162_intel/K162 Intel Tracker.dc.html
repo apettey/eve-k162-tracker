@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0;background:#04080a;min-height:100vh}
+a{color:#3ecf7a;text-decoration:none}
+a:hover{color:#7fe8ab;text-decoration:underline}
+@keyframes jumpflash{0%{box-shadow:0 0 0 1px #3ecf7a,0 0 40px rgba(62,207,122,0.55),inset 0 0 30px rgba(62,207,122,0.25)}100%{box-shadow:0 0 0 1px rgba(62,207,122,0.25),0 0 0 rgba(62,207,122,0),inset 0 0 0 rgba(62,207,122,0)}}
+@keyframes hotpulse{0%,100%{opacity:1}50%{opacity:0.45}}
+@keyframes sweep{0%{transform:translateX(-100%)}100%{transform:translateX(420%)}}
+</style>
+</helmet>
+<div style="min-height:100vh;background:#0d1114;padding:28px;box-sizing:border-box;font-family:'Rajdhani',sans-serif">
+<div style="max-width:1560px;margin:0 auto;border:1px solid #2a3438;box-shadow:0 24px 80px rgba(0,0,0,0.6);background:#04080a">
+  <div style="display:flex;align-items:center;height:34px;background:#10161a;border-bottom:1px solid #1c2529;user-select:none">
+    <div style="display:flex;align-items:center;gap:8px;padding:0 12px">
+      <div style="width:14px;height:14px;border:1px solid #3ecf7a;clip-path:polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px)"></div>
+      <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#8aa695">K162 Fleet Intel — Cold Static [CSTAT]</span>
+    </div>
+    <div style="flex:1"></div>
+    <div style="display:flex;align-self:stretch">
+      <div style="width:46px;display:flex;align-items:center;justify-content:center;color:#5c7a68;font-size:13px;cursor:pointer" style-hover="background:#1c2529;color:#dff2e6">─</div>
+      <div style="width:46px;display:flex;align-items:center;justify-content:center;color:#5c7a68;font-size:12px;cursor:pointer" style-hover="background:#1c2529;color:#dff2e6">▢</div>
+      <div style="width:46px;display:flex;align-items:center;justify-content:center;color:#5c7a68;font-size:13px;cursor:pointer" style-hover="background:#c42b1c;color:#fff">✕</div>
+    </div>
+  </div>
+<div style="min-height:calc(100vh - 120px);background:#04080a;background-image:radial-gradient(ellipse 80% 60% at 50% -10%, rgba(62,207,122,0.06), transparent);color:#b8cfc2;padding:0 0 8px 0">
+  <div style="display:flex;align-items:center;gap:16px;padding:14px 24px;border-bottom:1px solid rgba(62,207,122,0.18)">
+    <div style="display:flex;align-items:baseline;gap:10px">
+      <span style="font-family:'Share Tech Mono',monospace;font-size:20px;color:#3ecf7a;letter-spacing:2px">K162</span>
+      <span style="font-size:13px;letter-spacing:4px;color:#5c7a68;text-transform:uppercase">Fleet Intel</span>
+    </div>
+    <div style="flex:1"></div>
+    <div style="font-family:'Share Tech Mono',monospace;font-size:12px;color:#5c7a68">{{ onlineCount }} PILOTS ONLINE</div>
+    <button onClick="{{ simulateJump }}" style="font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1px;background:rgba(62,207,122,0.08);border:1px solid rgba(62,207,122,0.4);color:#3ecf7a;padding:7px 14px;cursor:pointer;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)" style-hover="background:rgba(62,207,122,0.18)">SIMULATE JUMP</button>
+  </div>
+
+  <sc-if value="{{ hasHeld }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 24px;border-bottom:1px solid rgba(62,207,122,0.12);background:rgba(62,207,122,0.02);flex-wrap:wrap">
+      <span style="font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:#5c7a68">WAKE WATCH</span>
+      <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:#3d5548">kills in systems you left &lt; {{ holdLabel }} ago trigger an alert</span>
+      <sc-for list="{{ held }}" as="h" hint-placeholder-count="2">
+        <span style="{{ h.style }}">{{ h.sys }} <span style="color:#5c7a68">· {{ h.char }} · {{ h.remaining }}</span></span>
+      </sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;top:78px;right:44px;z-index:50;width:320px;border:1px solid #e0563c;background:#140a08;box-shadow:0 0 30px rgba(224,86,60,0.35);clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);animation:jumpflash 0.6s ease-out">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid rgba(224,86,60,0.3)">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;color:#e0563c;animation:hotpulse 1.2s infinite">⚠ KILL IN WAKE</span>
+        <span onClick="{{ dismissToast }}" style="color:#5c7a68;cursor:pointer;font-size:12px" style-hover="color:#dff2e6">✕</span>
+      </div>
+      <div style="padding:10px 12px">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:16px;color:#dff2e6">{{ toastSys }}</div>
+        <div style="font-size:13px;color:#b8cfc2;margin-top:2px">{{ toastDetail }}</div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;font-family:'Share Tech Mono',monospace;font-size:10px;color:#5c7a68">
+          <span>{{ toastWho }}</span>
+          <a href="{{ toastUrl }}" target="_blank" style="color:#e0563c">zkill ↗</a>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ isGrid }}" hint-placeholder-val="{{ true }}">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:14px;padding:18px 24px;max-width:1500px;margin:0 auto">
+      <sc-for list="{{ chars }}" as="c" hint-placeholder-count="4">
+        <div onClick="{{ c.focus }}" style="{{ c.cardStyle }}" style-hover="border-color:rgba(62,207,122,0.6);background:rgba(62,207,122,0.04)">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid rgba(62,207,122,0.12)">
+            <div style="{{ c.portraitStyle }}"></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:17px;font-weight:600;color:#dff2e6;letter-spacing:0.5px">{{ c.name }}</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#5c7a68">{{ c.ship }}</div>
+            </div>
+            <div style="{{ c.threatStyle }}">{{ c.threatLabel }}</div>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:10px;padding:12px 14px 4px 14px">
+            <span style="font-family:'Share Tech Mono',monospace;font-size:24px;color:#3ecf7a;letter-spacing:1px">{{ c.system }}</span>
+            <span style="font-size:13px;font-weight:600;color:#8aa695">{{ c.sysClass }}</span>
+            <span style="font-size:12px;color:#d6a52a">{{ c.effect }}</span>
+          </div>
+          <div style="display:flex;gap:6px;padding:4px 14px 10px 14px;flex-wrap:wrap">
+            <sc-for list="{{ c.statics }}" as="s" hint-placeholder-count="2">
+              <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:#8aa695;border:1px solid rgba(62,207,122,0.22);padding:2px 7px">{{ s.code }} → {{ s.dest }}</span>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:2px;height:34px;padding:0 14px;border-top:1px solid rgba(62,207,122,0.08);padding-top:8px">
+            <sc-for list="{{ c.bars }}" as="b" hint-placeholder-count="24">
+              <div style="{{ b.style }}"></div>
+            </sc-for>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px 12px 14px">
+            <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#5c7a68">{{ c.killSummary }}</span>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#5c7a68">{{ c.residentSummary }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isFocus }}" hint-placeholder-val="{{ false }}">
+    <div style="display:grid;grid-template-columns:250px 1fr;gap:16px;padding:18px 24px;max-width:1500px;margin:0 auto;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button onClick="{{ backToGrid }}" style="font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1px;background:none;border:1px solid rgba(62,207,122,0.3);color:#8aa695;padding:8px;cursor:pointer;text-align:left" style-hover="color:#3ecf7a;border-color:rgba(62,207,122,0.6)">◄ ALL PILOTS</button>
+        <sc-for list="{{ railChars }}" as="r" hint-placeholder-count="4">
+          <div onClick="{{ r.focus }}" style="{{ r.railStyle }}" style-hover="border-color:rgba(62,207,122,0.55)">
+            <div style="{{ r.portraitStyle }}"></div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:14px;font-weight:600;color:#dff2e6">{{ r.name }}</span>
+                <span style="{{ r.dotStyle }}"></span>
+              </div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#5c7a68;margin-top:2px">{{ r.system }} · {{ r.ship }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="border:1px solid rgba(62,207,122,0.3);background:rgba(62,207,122,0.03);padding:16px 18px;clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);position:relative;overflow:hidden">
+          <div style="position:absolute;top:0;left:0;width:25%;height:1px;background:linear-gradient(90deg,transparent,#3ecf7a,transparent);animation:sweep 4s linear infinite"></div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(62,207,122,0.12)">
+            <div style="{{ f.portraitStyle }}"></div>
+            <div style="{{ f.corpLogoStyle }}"></div>
+            <div>
+              <div style="font-size:19px;font-weight:600;color:#dff2e6;letter-spacing:0.5px">{{ f.pilotName }}</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#5c7a68">{{ f.pilotCorp }} · {{ f.ship }}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+            <span style="font-family:'Share Tech Mono',monospace;font-size:34px;color:#3ecf7a;letter-spacing:2px">{{ f.system }}</span>
+            <span style="font-size:16px;font-weight:600;color:#8aa695">{{ f.sysClass }}</span>
+            <span style="font-size:14px;color:#d6a52a">{{ f.effect }}</span>
+            <div style="flex:1"></div>
+            <div style="{{ f.threatStyle }}">{{ f.threatLabel }}</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
+            <sc-for list="{{ f.statics }}" as="s" hint-placeholder-count="2">
+              <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#8aa695;border:1px solid rgba(62,207,122,0.25);padding:3px 9px">{{ s.code }} → {{ s.dest }} <span style="color:#5c7a68">{{ s.mass }}</span></span>
+            </sc-for>
+            <div style="flex:1"></div>
+            <a href="{{ f.zkillUrl }}" target="_blank" style="font-family:'Share Tech Mono',monospace;font-size:11px;border:1px solid rgba(62,207,122,0.35);padding:3px 10px">ZKILLBOARD ↗</a>
+            <a href="{{ f.anoikisUrl }}" target="_blank" style="font-family:'Share Tech Mono',monospace;font-size:11px;border:1px solid rgba(62,207,122,0.35);padding:3px 10px">ANOIK.IS ↗</a>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:14px;align-items:center;font-family:'Share Tech Mono',monospace;font-size:11px;color:#5c7a68;flex-wrap:wrap">
+            <span style="letter-spacing:1px">TRAIL</span>
+            <sc-for list="{{ f.trail }}" as="t" hint-placeholder-count="4">
+              <span style="{{ t.style }}">{{ t.name }}</span>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:14px;align-items:start">
+          <div style="border:1px solid rgba(62,207,122,0.18);background:rgba(10,18,14,0.6)">
+            <div style="display:flex;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(62,207,122,0.12)">
+              <span style="font-size:13px;letter-spacing:3px;color:#8aa695">RECENT KILLS IN SYSTEM</span>
+              <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#5c7a68">LAST 48H</span>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:3px;height:52px;padding:10px 14px 4px 14px">
+              <sc-for list="{{ f.bigBars }}" as="b" hint-placeholder-count="24">
+                <div style="{{ b.style }}"></div>
+              </sc-for>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:0 14px 8px 14px;font-family:'Share Tech Mono',monospace;font-size:9px;color:#3d5548"><span>-48H</span><span>-24H</span><span>NOW</span></div>
+            <sc-for list="{{ f.kills }}" as="k" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid rgba(62,207,122,0.08);font-family:'Share Tech Mono',monospace;font-size:12px">
+                <span style="color:#5c7a68;width:52px">{{ k.time }}</span>
+                <div style="{{ k.corpLogoStyle }}"></div>
+                <span style="color:#dff2e6;width:96px">{{ k.ship }}</span>
+                <span style="color:#8aa695;flex:1">{{ k.victim }}</span>
+                <span style="color:#5c7a68">{{ k.involved }}×</span>
+                <a href="{{ k.url }}" target="_blank" style="font-size:11px">zkill ↗</a>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="border:1px solid rgba(62,207,122,0.18);background:rgba(10,18,14,0.6)">
+            <div style="display:flex;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(62,207,122,0.12)">
+              <span style="font-size:13px;letter-spacing:3px;color:#8aa695">WHO LIVES HERE</span>
+              <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#5c7a68">{{ lookbackLabel }}</span>
+            </div>
+            <sc-for list="{{ f.residents }}" as="rc" hint-placeholder-count="4">
+              <div style="display:flex;gap:10px;align-items:center;padding:9px 14px;border-top:1px solid rgba(62,207,122,0.08)">
+                <div style="{{ rc.logoStyle }}"></div>
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline">
+                    <span style="font-size:14px;font-weight:600;color:#dff2e6">{{ rc.name }} <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#3ecf7a">[{{ rc.ticker }}]</span></span>
+                    <a href="{{ rc.url }}" target="_blank" style="font-family:'Share Tech Mono',monospace;font-size:10px">zkill ↗</a>
+                  </div>
+                  <div style="display:flex;gap:14px;font-family:'Share Tech Mono',monospace;font-size:11px;color:#5c7a68;margin-top:2px">
+                    <span>{{ rc.pilots }} pilots seen</span><span>{{ rc.kills }} kills</span><span>active {{ rc.tz }}</span><span style="{{ rc.lastStyle }}">last {{ rc.lastSeen }}</span>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+            <div style="padding:9px 14px;border-top:1px solid rgba(62,207,122,0.08);font-family:'Share Tech Mono',monospace;font-size:11px;color:#3d5548">Derived from {{ f.killsAnalyzed }} killmails over {{ lookbackLabel }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+  <div style="display:flex;align-items:center;gap:18px;height:26px;padding:0 14px;background:#10161a;border-top:1px solid #1c2529;font-family:'Share Tech Mono',monospace;font-size:10px;color:#3d5548">
+    <span>.NET 8.0 · WPF · win-x64</span>
+    <span>ESI: <span style="color:#3ecf7a">CONNECTED</span></span>
+    <span>zKillboard RedisQ: <span style="color:#3ecf7a">LISTENING</span></span>
+    <div style="flex:1"></div>
+    <span>TQ TIME 18:42</span>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;soundEnabled&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Alerts&quot;},&quot;holdMinutes&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:10,&quot;min&quot;:1,&quot;max&quot;:60,&quot;step&quot;:1,&quot;unit&quot;:&quot;min&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Alerts&quot;},&quot;lookback&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;2 WEEKS&quot;,&quot;options&quot;:[&quot;48 HOURS&quot;,&quot;2 WEEKS&quot;,&quot;3 MONTHS&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Intel&quot;}}">
+class Component extends DCLogic {
+  state = { focusId: null, flashId: null, jumpTick: 0, tick: 0, toast: null,
+    held: [
+      { sys: "J130930", char: "Vex Arkanis", expiresAt: Date.now() + 6.5 * 60000, alerted: false },
+      { sys: "J160941", char: "Dren Kovacs", expiresAt: Date.now() + 2 * 60000, alerted: false }
+    ] };
+  componentDidMount() {
+    this._timer = setInterval(() => {
+      const now = Date.now();
+      this.setState(s => ({ tick: s.tick + 1, held: s.held.filter(h => h.expiresAt > now) }));
+    }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this._timer); this._killTimeout && clearTimeout(this._killTimeout); }
+  wakeKill() {
+    const held = this.state.held;
+    if (!held.length) return;
+    const h = held[Math.floor(Math.random() * held.length)];
+    const ships = ["Venture", "Heron", "Epithal", "Astero", "Drake"];
+    this.ping(); setTimeout(() => this.ping(), 250);
+    this.setState({
+      toast: { sys: h.sys, detail: ships[Math.floor(Math.random() * ships.length)] + " destroyed · " + (2 + Math.floor(Math.random() * 8)) + " attackers", who: h.char + "'s wake", url: "https://zkillboard.com/system/" + h.sys + "/" },
+      held: held.map(x => x === h ? { ...x, alerted: true } : x)
+    });
+    setTimeout(() => this.setState({ toast: null }), 9000);
+  }
+
+  data = [
+    { id: 1, name: "Vex Arkanis", initials: "VA", portraitId: 90000101, ship: "Loki", trail: ["J130930", "J144208", "J121406"],
+      sys: { system: "J121406", sysClass: "C4", effect: "Wolf-Rayet", statics: [{code:"X877",dest:"C4",mass:"2.0G"},{code:"H900",dest:"C5",mass:"3.0G"}],
+        bars: [0,0,1,0,0,0,0,2,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0], killsAnalyzed: 214,
+        kills: [{time:"11:42",ship:"Epithal",victim:"Sable Industries",involved:3},{time:"03:15",ship:"Venture",victim:"Krait Mining Co",involved:2}],
+        residents: [{name:"Hole Punchers",ticker:"HPNCH",pilots:12,kills:41,tz:"EU",lastSeen:"2h ago"},{name:"Sable Industries",ticker:"SABLE",pilots:5,kills:8,tz:"US",lastSeen:"11h ago"}] } },
+    { id: 2, name: "Mira Solano", initials: "MS", portraitId: 90000102, ship: "Astero", trail: ["J121406", "J154208"],
+      sys: { system: "J154208", sysClass: "C3", effect: "", statics: [{code:"U210",dest:"LS",mass:"1.0G"}],
+        bars: [0,1,0,0,2,1,0,0,0,3,1,0,0,0,1,0,2,0,0,1,0,0,2,1], killsAnalyzed: 388,
+        kills: [{time:"13:07",ship:"Astero",victim:"Nomad Salvage",involved:1},{time:"09:51",ship:"Heron",victim:"Independent",involved:4},{time:"22:30",ship:"Gnosis",victim:"Redshift Cartel",involved:6}],
+        residents: [{name:"Redshift Cartel",ticker:"RDSH",pilots:19,kills:112,tz:"US/AU",lastSeen:"40m ago"},{name:"Void Tenants",ticker:"VOIDT",pilots:7,kills:23,tz:"EU",lastSeen:"6h ago"},{name:"Nomad Salvage",ticker:"NOMS",pilots:3,kills:2,tz:"US",lastSeen:"3d ago"}] } },
+    { id: 3, name: "Dren Kovacs", initials: "DK", portraitId: 90000103, ship: "Buzzard", trail: ["J105433", "J160941", "Thera"],
+      sys: { system: "Thera", sysClass: "C-SHATTERED", effect: "", statics: [{code:"—",dest:"MANY",mass:"VAR"}],
+        bars: [1,2,0,3,1,2,4,1,0,2,3,1,2,5,2,1,3,2,4,2,3,5,4,6], killsAnalyzed: 1204,
+        kills: [{time:"14:58",ship:"Sabre",victim:"Gate Watch",involved:11},{time:"14:32",ship:"Pacifier",victim:"Signal Cartel",involved:8},{time:"13:44",ship:"Hecate",victim:"Wanderers Inc",involved:9},{time:"12:05",ship:"Astero",victim:"Independent",involved:5}],
+        residents: [{name:"Signal Cartel",ticker:"1SIG",pilots:88,kills:14,tz:"ALL",lastSeen:"now"},{name:"Gate Watch",ticker:"GWTCH",pilots:22,kills:203,tz:"EU/US",lastSeen:"now"},{name:"Thera Squatters",ticker:"THSQ",pilots:9,kills:67,tz:"RU",lastSeen:"1h ago"}] } },
+    { id: 4, name: "Ilya Von Sarum", initials: "IV", portraitId: 90000104, ship: "Praxis", trail: ["J121406", "J105433"],
+      sys: { system: "J105433", sysClass: "C5", effect: "Pulsar", statics: [{code:"H296",dest:"C5",mass:"3.3G"}],
+        bars: [0,0,0,1,0,0,0,0,2,1,0,0,0,0,0,3,1,0,0,0,1,0,0,0], killsAnalyzed: 156,
+        kills: [{time:"08:12",ship:"Drake",victim:"Krab Collective",involved:7},{time:"01:47",ship:"Praxis",victim:"Krab Collective",involved:7}],
+        residents: [{name:"Krab Collective",ticker:"KRAB",pilots:15,kills:19,tz:"AU",lastSeen:"5h ago"},{name:"Fifth Circle",ticker:"5CRC",pilots:11,kills:88,tz:"EU",lastSeen:"9h ago"}] } }
+  ];
+
+  portrait(id) { return "https://images.evetech.net/characters/" + id + "/portrait?size=64"; }
+  corpLogo(id) { return "https://images.evetech.net/corporations/" + id + "/logo?size=64"; }
+  imgTile(url, size, border) {
+    return `width:${size}px;height:${size}px;flex-shrink:0;background:rgba(62,207,122,0.05) url('${url}') center/cover no-repeat;${border ? `border:1px solid ${border};` : ""}`;
+  }
+  threat(sys) {
+    const recent = sys.bars.slice(-6).reduce((a, b) => a + b, 0);
+    if (recent >= 6) return "hot"; if (recent >= 2) return "warm"; return "calm";
+  }
+  threatBadge(level) {
+    const c = { calm: "#3ecf7a", warm: "#d6a52a", hot: "#e0563c" }[level];
+    return `font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;color:${c};border:1px solid ${c};padding:3px 10px;text-transform:uppercase;${level === "hot" ? "animation:hotpulse 1.2s infinite;" : ""}`;
+  }
+  barStyles(bars, maxH) {
+    const max = Math.max(1, ...bars);
+    return bars.map(v => ({ style: `flex:1;background:${v ? "rgba(62,207,122,0.75)" : "rgba(62,207,122,0.12)"};height:${Math.max(6, (v / max) * maxH)}%;min-height:2px` }));
+  }
+  ping() {
+    if ((this.props.soundEnabled ?? true) === false) return;
+    try {
+      const ctx = this._actx || (this._actx = new (window.AudioContext || window.webkitAudioContext)());
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.value = 880; o.type = "sine";
+      g.gain.setValueAtTime(0.12, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.4);
+    } catch (e) {}
+  }
+  simulateJump = () => {
+    const pool = ["J115844", "J170211", "J102634", "J213418"];
+    const c = this.data[Math.floor(Math.random() * this.data.length)];
+    const newSys = pool[Math.floor(Math.random() * pool.length)];
+    const holdMs = (this.props.holdMinutes ?? 10) * 60000;
+    const left = { sys: c.sys.system, char: c.name, expiresAt: Date.now() + holdMs, alerted: false };
+    this._killTimeout && clearTimeout(this._killTimeout);
+    this._killTimeout = setTimeout(() => this.wakeKill(), 4000 + Math.random() * 4000);
+    this.setState(s => ({ held: [...s.held.filter(h => h.sys !== left.sys), left] }));
+    c.trail = [...c.trail.slice(-3), newSys];
+    c.sys = { ...c.sys, system: newSys, sysClass: "C" + (2 + Math.floor(Math.random() * 4)),
+      effect: ["", "Pulsar", "Magnetar", "Red Giant", ""][Math.floor(Math.random() * 5)],
+      bars: Array.from({ length: 24 }, () => Math.random() < 0.75 ? 0 : Math.ceil(Math.random() * 5)) };
+    this.ping();
+    this.setState({ flashId: c.id, jumpTick: this.state.jumpTick + 1 });
+    setTimeout(() => this.setState({ flashId: null }), 1600);
+  };
+
+  renderVals() {
+    const focusId = this.state.focusId;
+    const lookback = this.props.lookback ?? "2 WEEKS";
+    const chars = this.data.map(c => {
+      const level = this.threat(c.sys);
+      const flash = this.state.flashId === c.id;
+      return {
+        ...c.sys, name: c.name, ship: c.ship, initials: c.initials,
+        portraitStyle: this.imgTile(this.portrait(c.portraitId), 44, "rgba(62,207,122,0.3)"),
+        focus: () => this.setState({ focusId: c.id }),
+        threatLabel: level, threatStyle: this.threatBadge(level),
+        bars: this.barStyles(c.sys.bars, 100),
+        killSummary: c.sys.kills.length + " KILLS / 48H",
+        residentSummary: c.sys.residents.length + " RESIDENT GROUPS",
+        cardStyle: `cursor:pointer;border:1px solid rgba(62,207,122,${flash ? "0.9" : "0.22"});background:rgba(8,14,11,0.7);clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px);${flash ? "animation:jumpflash 1.5s ease-out;" : ""}`
+      };
+    });
+    const fc = this.data.find(c => c.id === focusId);
+    let f = null, railChars = [];
+    if (fc) {
+      const level = this.threat(fc.sys);
+      f = {
+        ...fc.sys, threatLabel: "THREAT: " + level, threatStyle: this.threatBadge(level),
+        pilotName: fc.name, pilotCorp: "Cold Static [CSTAT]", ship: fc.ship,
+        portraitStyle: this.imgTile(this.portrait(fc.portraitId), 56, "rgba(62,207,122,0.4)"),
+        corpLogoStyle: this.imgTile(this.corpLogo(98000001), 32),
+        bigBars: this.barStyles(fc.sys.bars, 100),
+        zkillUrl: "https://zkillboard.com/system/" + fc.sys.system + "/",
+        anoikisUrl: "http://anoik.is/systems/" + fc.sys.system,
+        kills: fc.sys.kills.map(k => ({ ...k, corpLogoStyle: this.imgTile(this.corpLogo(k.corpId || 1), 20), url: "https://zkillboard.com/system/" + fc.sys.system + "/" })),
+        residents: fc.sys.residents.map(r => ({ ...r, logoStyle: this.imgTile(this.corpLogo(r.corpId || 1), 32), url: "https://zkillboard.com/corporation/" + r.ticker.toLowerCase() + "/", lastStyle: r.lastSeen === "now" ? "color:#e0563c" : "color:#5c7a68" })),
+        trail: fc.trail.map((t, i) => ({ name: (i ? "› " : "") + t, style: i === fc.trail.length - 1 ? "color:#3ecf7a" : "color:#5c7a68" }))
+      };
+      railChars = this.data.map(c => {
+        const lv = this.threat(c.sys), col = { calm: "#3ecf7a", warm: "#d6a52a", hot: "#e0563c" }[lv];
+        return { name: c.name, ship: c.ship, system: c.sys.system,
+          portraitStyle: this.imgTile(this.portrait(c.portraitId), 34, "rgba(62,207,122,0.25)"),
+          focus: () => this.setState({ focusId: c.id }),
+          dotStyle: `width:8px;height:8px;border-radius:50%;background:${col};${lv === "hot" ? "animation:hotpulse 1.2s infinite;" : ""}`,
+          railStyle: `cursor:pointer;display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid rgba(62,207,122,${c.id === focusId ? "0.6" : "0.18"});background:${c.id === focusId ? "rgba(62,207,122,0.06)" : "rgba(8,14,11,0.7)"}` };
+      });
+    }
+    const now = Date.now();
+    const held = this.state.held.map(h => {
+      const s = Math.max(0, Math.round((h.expiresAt - now) / 1000));
+      return { sys: h.sys, char: h.char.split(" ")[0],
+        remaining: Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"),
+        style: `font-family:'Share Tech Mono',monospace;font-size:10px;padding:2px 8px;border:1px solid ${h.alerted ? "#e0563c" : "rgba(62,207,122,0.25)"};color:${h.alerted ? "#e0563c" : "#8aa695"};${h.alerted ? "animation:hotpulse 1.2s infinite;" : ""}` };
+    });
+    const t = this.state.toast;
+    return {
+      isGrid: !fc, isFocus: !!fc, chars, f, railChars,
+      hasHeld: held.length > 0, held, holdLabel: (this.props.holdMinutes ?? 10) + " min",
+      toast: !!t, toastSys: t && t.sys, toastDetail: t && t.detail, toastWho: t && t.who, toastUrl: t && t.url,
+      dismissToast: () => this.setState({ toast: null }),
+      onlineCount: this.data.length,
+      lookbackLabel: lookback,
+      simulateJump: this.simulateJump,
+      backToGrid: () => this.setState({ focusId: null })
+    };
+  }
+}
+</script>
+</body>
+</html>

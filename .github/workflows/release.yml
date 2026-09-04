@@ -1,0 +1,23 @@
+# Builds K162 Fleet Intel via the shared reusable workflow.
+# - every branch push / manual run: CI build, downloadable from the run's Artifacts
+# - push a tag like v1.0.0 (scripts/release.ps1 does this): same build, plus the
+#   Velopack installer + delta update packages attached to a GitHub Release;
+#   installed apps then auto-update from that release.
+name: Release
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: apettey/eve-contracts/.github/workflows/build-windows-app.yml@main
+    permissions:
+      contents: write
+    with:
+      project: src/K162.App/K162.App.csproj
+      app-name: K162FleetIntel
+      test-project: tests/K162.Tests/K162.Tests.csproj
+      main-exe: K162.App.exe
