@@ -19,8 +19,14 @@ scanning out.
 - **Wake Watch** — when a pilot leaves a system it is held for N minutes
   (default 10). A kill landing in a held system fires a toast, a red pulsing
   chip, a double sound ping, and flashes the taskbar when the window is unfocused.
-- **Live kill feed** — zKillboard RedisQ long-poll; kills in current systems
-  update the intel panels in place.
+- **Live kill feed** — zKillboard RedisQ long-poll. A system is "subscribed"
+  while a pilot occupies it and for the Wake Watch hold window after the last
+  pilot leaves; kills there fold into the per-system intel cache live and are
+  dropped once the window closes.
+- **Chat log fast path** — tails EVE Local chat logs
+  (`Documents\EVE\logs\Chatlogs`, needs "Log Chat to File" in the client) and
+  applies system changes the instant "Channel changed to Local" appears —
+  seconds faster than ESI polling, which stays on as the source of truth.
 - **Demo mode** — the full UI with simulated pilots and a SIMULATE JUMP button,
   no login needed (also `K162.App.exe --demo`).
 

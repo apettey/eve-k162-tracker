@@ -116,6 +116,34 @@ public sealed class FleetTracker(EsiClient esi, SsoService sso, TokenStore token
         }
     }
 
+    /// <summary>
+    /// Fast-path location report from the chat-log watcher: applies a jump the moment the
+    /// Local channel changes, without waiting for the next ESI location poll (which remains
+    /// the source of truth and will simply agree a few seconds later).
+    /// </summary>
+    public async Task ReportLocalSystemAsync(long? characterId, string? listenerName, string systemName, CancellationToken ct)
+    {
+        Tracked? t;
+        lock (_lock)
+        {
+            t = characterId.HasValue && _pilots.TryGetValue(characterId.Value, out var byId)
+                ? byId
+                : _pilots.Values.FirstOrDefault(p =>
+                    string.Equals(p.Snapshot.Name, listenerName, StringComparison.OrdinalIgnoreCase));
+        }
+        if (t is null) return;
+        if (string.Equals(t.Snapshot.SystemName, systemName, StringComparison.OrdinalIgnoreCase)) return;
+
+        int systemId;
+        if (wormholes.TryGetId(systemName, out var whId)) systemId = whId;
+        else if (await esi.ResolveSystemIdAsync(systemName, ct) is { } resolved) systemId = resolved;
+        else return; // unknown name (localized client?) — leave it to ESI polling
+
+        if (systemId == t.Snapshot.SolarSystemId) return;
+        t.Snapshot.Online = true; // a fresh Local line means the client is logged in
+        await HandleJumpAsync(t, systemId, ct);
+    }
+
     private async Task HandleJumpAsync(Tracked t, int newSystemId, CancellationToken ct)
     {
         var fromId = t.Snapshot.SolarSystemId;

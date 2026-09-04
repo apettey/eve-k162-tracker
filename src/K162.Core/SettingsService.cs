@@ -15,6 +15,11 @@ public sealed class AppSettings
     /// <summary>Localhost port the SSO callback listener binds to.</summary>
     public int CallbackPort { get; set; } = 8410;
 
+    /// <summary>Tail EVE Local chat logs for instant system-change detection.</summary>
+    public bool ChatLogsEnabled { get; set; } = true;
+    /// <summary>Chat log folder override; empty = Documents\EVE\logs\Chatlogs.</summary>
+    public string ChatLogDirectory { get; set; } = "";
+
     public int ClampedHoldMinutes => Math.Clamp(HoldMinutes, 1, 60);
 }
 

@@ -106,6 +106,30 @@ public sealed class EsiClient(HttpClient http)
         return result;
     }
 
+    /// <summary>Resolves a solar system name to its id via POST /universe/ids/ (cached).</summary>
+    public async Task<int?> ResolveSystemIdAsync(string systemName, CancellationToken ct)
+    {
+        var cached = _systemNames.FirstOrDefault(kv =>
+            string.Equals(kv.Value, systemName, StringComparison.OrdinalIgnoreCase));
+        if (cached.Key != 0) return cached.Key;
+
+        using var res = await http.PostAsJsonAsync(Base + "/universe/ids/", new[] { systemName }, ct);
+        if (!res.IsSuccessStatusCode) return null;
+        using var doc = JsonDocument.Parse(await res.Content.ReadAsStringAsync(ct));
+        if (!doc.RootElement.TryGetProperty("systems", out var systems) ||
+            systems.ValueKind != JsonValueKind.Array) return null;
+        foreach (var el in systems.EnumerateArray())
+        {
+            if (string.Equals(el.GetProperty("name").GetString(), systemName, StringComparison.OrdinalIgnoreCase))
+            {
+                var id = el.GetProperty("id").GetInt32();
+                _systemNames[id] = el.GetProperty("name").GetString()!;
+                return id;
+            }
+        }
+        return null;
+    }
+
     public async Task<KillmailDetail?> GetKillmailAsync(long killmailId, string hash, CancellationToken ct)
     {
         using var doc = await GetAsync($"/killmails/{killmailId}/{hash}/", null, ct);

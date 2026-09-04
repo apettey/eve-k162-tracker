@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using K162.App.Services;
 using K162.Core;
+using K162.Core.ChatLogs;
 using K162.Core.Intel;
 using K162.Core.Sso;
 using K162.Core.Zkill;
@@ -22,6 +23,7 @@ public partial class MainViewModel : ObservableObject
     private CancellationTokenSource? _toastCts;
     private Demo.DemoFleet? _demo;
     private bool _redisqStarted;
+    private CancellationTokenSource? _chatLogCts;
 
     public MainViewModel(AppServices services)
     {
@@ -63,6 +65,7 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _primaryActionLabel = "SETTINGS";
     [ObservableProperty] private string _esiStatusText = "IDLE";
     [ObservableProperty] private string _redisqStatusText = "OFF";
+    [ObservableProperty] private string _chatLogStatusText = "OFF";
     [ObservableProperty] private string _tqTime = "";
     [ObservableProperty] private string _holdHelperText = "";
     [ObservableProperty] private string _lookbackLabel = "2 WEEKS";
@@ -125,7 +128,31 @@ public partial class MainViewModel : ObservableObject
         _svc.Tracker.Track(auth, _appCts.Token);
         PrimaryActionLabel = "SETTINGS";
         EnsureRedisQ();
+        RestartChatLogWatcher();
         OnViewStateChanged();
+    }
+
+    /// <summary>(Re)starts the Local chat-log tail — the fast path for system changes.</summary>
+    private void RestartChatLogWatcher()
+    {
+        _chatLogCts?.Cancel();
+        _chatLogCts = null;
+        if (IsDemo || Pilots.Count == 0 || !Settings.ChatLogsEnabled)
+        {
+            ChatLogStatusText = "OFF";
+            return;
+        }
+        var cts = _chatLogCts = CancellationTokenSource.CreateLinkedTokenSource(_appCts.Token);
+        var watcher = new ChatLogWatcher(Settings.ChatLogDirectory);
+        watcher.WatchingChanged += n => OnUi(() =>
+        {
+            if (!cts.IsCancellationRequested)
+                ChatLogStatusText = n > 0 ? $"WATCHING {n}" : "NO LOGS";
+        });
+        watcher.SystemChanged += change =>
+            _ = _svc.Tracker.ReportLocalSystemAsync(change.CharacterId, change.ListenerName, change.SystemName, cts.Token);
+        ChatLogStatusText = "SCANNING";
+        _ = watcher.RunAsync(cts.Token);
     }
 
     private void EnsureRedisQ()
@@ -231,6 +258,7 @@ public partial class MainViewModel : ObservableObject
                 _ = RefreshIntelAsync(p);
         }
         _svc.Tracker.Configure(Settings.EsiClientId);
+        RestartChatLogWatcher();
     }
 
     // ---- tracker events (UI thread) ----
@@ -280,32 +308,32 @@ public partial class MainViewModel : ObservableObject
 
     private async void OnLiveKill(LiveKill kill)
     {
-        if (_wake.Held.Any(h => h.SolarSystemId == kill.SolarSystemId))
+        // A system is "subscribed" while a pilot is in it, or for the Wake Watch hold
+        // window after the last pilot left. Everything else in the RedisQ firehose is dropped.
+        var isHeld = _wake.Held.Any(h => h.SolarSystemId == kill.SolarSystemId);
+        var isOccupied = Pilots.Any(p => p.SolarSystemId == kill.SolarSystemId);
+        if (!isHeld && !isOccupied) return;
+
+        var shipName = await _svc.Esi.GetTypeNameAsync(kill.VictimShipTypeId, _appCts.Token) ?? "Ship";
+
+        if (isHeld && _wake.TryAlert(kill.SolarSystemId) is { } held)
         {
-            var shipName = await _svc.Esi.GetTypeNameAsync(kill.VictimShipTypeId, _appCts.Token) ?? "Ship";
-            var held = _wake.TryAlert(kill.SolarSystemId);
-            if (held is not null)
-            {
-                RaiseWakeAlert(held.SystemName,
-                    $"{shipName} destroyed · {kill.AttackerCount} attackers",
-                    $"{held.PilotName}'s wake",
-                    $"https://zkillboard.com/kill/{kill.KillmailId}/");
-            }
+            RaiseWakeAlert(held.SystemName,
+                $"{shipName} destroyed · {kill.AttackerCount} attackers",
+                $"{held.PilotName}'s wake",
+                $"https://zkillboard.com/kill/{kill.KillmailId}/");
         }
 
-        var affected = Pilots.FirstOrDefault(p => p.SolarSystemId == kill.SolarSystemId);
-        if (affected is not null)
-        {
-            var shipName = await _svc.Esi.GetTypeNameAsync(kill.VictimShipTypeId, _appCts.Token) ?? "Ship";
-            var corp = kill.VictimCorpId > 0 ? await _svc.Esi.GetCorporationAsync(kill.VictimCorpId, _appCts.Token) : null;
-            var updated = _svc.Intel.ApplyLiveKill(kill, shipName, corp?.Name ?? "");
-            if (updated is not null)
-                OnUi(() =>
-                {
-                    foreach (var p in Pilots.Where(p => p.SolarSystemId == kill.SolarSystemId))
-                        p.ApplyIntel(updated, LookbackLabel);
-                });
-        }
+        // Fold the kill into the per-system intel cache (occupied AND recently-vacated
+        // systems), so cards update live and a re-entry within the cache TTL is fresh.
+        var corp = kill.VictimCorpId > 0 ? await _svc.Esi.GetCorporationAsync(kill.VictimCorpId, _appCts.Token) : null;
+        var updated = _svc.Intel.ApplyLiveKill(kill, shipName, corp?.Name ?? "");
+        if (updated is not null)
+            OnUi(() =>
+            {
+                foreach (var p in Pilots.Where(p => p.SolarSystemId == kill.SolarSystemId))
+                    p.ApplyIntel(updated, LookbackLabel);
+            });
     }
 
     /// <summary>Shared alert path for live and demo wake kills: toast + red chip + double ping.</summary>

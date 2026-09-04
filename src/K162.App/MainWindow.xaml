@@ -161,6 +161,10 @@
                                Foreground="{StaticResource TextFaintBrush}">
                         <Run Text="zKillboard RedisQ: "/><Run Text="{Binding RedisqStatusText, Mode=OneWay}" Foreground="{StaticResource AccentBrush}"/>
                     </TextBlock>
+                    <TextBlock Margin="18,0,0,0" FontFamily="{StaticResource MonoFont}" FontSize="10"
+                               Foreground="{StaticResource TextFaintBrush}">
+                        <Run Text="CHAT LOG: "/><Run Text="{Binding ChatLogStatusText, Mode=OneWay}" Foreground="{StaticResource AccentBrush}"/>
+                    </TextBlock>
                     <Button Margin="18,0,0,0" Style="{StaticResource LinkButton}" FontSize="10"
                             Foreground="{StaticResource WarmBrush}"
                             Content="{Binding UpdateChipText}"
