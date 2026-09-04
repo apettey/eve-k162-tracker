@@ -35,7 +35,7 @@ scanning out.
 ## First run
 
 1. Create an application at [developers.eveonline.com](https://developers.eveonline.com/)
-   with scopes `esi-location.read_location esi-location.read_online esi-location.read_ship_type`
+   with scopes `esi-location.read_location.v1 esi-location.read_online.v1 esi-location.read_ship_type.v1`
    and callback URL `http://localhost:8410/callback/`.
 2. Paste the client id into the setup screen (or Settings), then **ADD CHARACTER**
    for each account — the EVE SSO login opens in your browser.

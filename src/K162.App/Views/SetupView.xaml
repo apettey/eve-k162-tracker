@@ -17,7 +17,7 @@
                 <TextBlock Margin="0,22,0,0" Style="{StaticResource MonoLabel}"
                            Text="1 · REGISTER AN ESI APPLICATION"/>
                 <TextBlock Margin="0,6,0,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap">
-                    <Run Text="Create an application at "/><Hyperlink Foreground="{StaticResource AccentBrush}" Click="DevPortal_Click">developers.eveonline.com</Hyperlink><Run Text=" with scopes "/><Run FontFamily="{StaticResource MonoFont}" FontSize="11" Text="esi-location.read_location esi-location.read_online esi-location.read_ship_type"/><Run Text=" and callback URL "/><Run FontFamily="{StaticResource MonoFont}" FontSize="11" Text="http://localhost:8410/callback/"/><Run Text=". Paste its client id below."/>
+                    <Run Text="Create an application at "/><Hyperlink Foreground="{StaticResource AccentBrush}" Click="DevPortal_Click">developers.eveonline.com</Hyperlink><Run Text=" with scopes "/><Run FontFamily="{StaticResource MonoFont}" FontSize="11" Text="esi-location.read_location.v1 esi-location.read_online.v1 esi-location.read_ship_type.v1"/><Run Text=" and callback URL "/><Run FontFamily="{StaticResource MonoFont}" FontSize="11" Text="http://localhost:8410/callback/"/><Run Text=". Paste its client id below."/>
                 </TextBlock>
                 <TextBox Margin="0,10,0,0" Style="{StaticResource DarkTextBox}"
                          Text="{Binding Settings.EsiClientId, UpdateSourceTrigger=PropertyChanged}"/>

@@ -14,7 +14,7 @@ public sealed record SsoTokens(
 /// </summary>
 public sealed class SsoService(HttpClient http)
 {
-    public const string Scopes = "esi-location.read_location esi-location.read_online esi-location.read_ship_type";
+    public const string Scopes = "esi-location.read_location.v1 esi-location.read_online.v1 esi-location.read_ship_type.v1";
     private const string AuthorizeUrl = "https://login.eveonline.com/v2/oauth/authorize/";
     private const string TokenUrl = "https://login.eveonline.com/v2/oauth/token";
 
