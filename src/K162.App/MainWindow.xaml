@@ -159,7 +159,7 @@
                     </TextBlock>
                     <TextBlock Margin="18,0,0,0" FontFamily="{StaticResource MonoFont}" FontSize="10"
                                Foreground="{StaticResource TextFaintBrush}">
-                        <Run Text="zKillboard RedisQ: "/><Run Text="{Binding RedisqStatusText, Mode=OneWay}" Foreground="{StaticResource AccentBrush}"/>
+                        <Run Text="zKillboard R2Z2: "/><Run Text="{Binding LiveFeedStatusText, Mode=OneWay}" Foreground="{StaticResource AccentBrush}"/>
                     </TextBlock>
                     <TextBlock Margin="18,0,0,0" FontFamily="{StaticResource MonoFont}" FontSize="10"
                                Foreground="{StaticResource TextFaintBrush}">

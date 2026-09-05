@@ -43,8 +43,8 @@ public partial class MainViewModel : ObservableObject
             Core.EsiStatus.Error => "ERROR",
             _ => "IDLE",
         });
-        _svc.RedisQ.KillReceived += k => OnUi(() => OnLiveKill(k));
-        _svc.RedisQ.ListeningChanged += on => OnUi(() => RedisqStatusText = on ? "LISTENING" : "RECONNECTING");
+        _svc.LiveFeed.KillReceived += k => OnUi(() => OnLiveKill(k));
+        _svc.LiveFeed.ListeningChanged += on => OnUi(() => LiveFeedStatusText = on ? "LISTENING" : "RECONNECTING");
         _svc.Updates.Changed += () => OnUi(RefreshUpdateChip);
 
         _secondTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
@@ -64,7 +64,7 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _onlineCountLabel = "0 PILOTS ONLINE";
     [ObservableProperty] private string _primaryActionLabel = "SETTINGS";
     [ObservableProperty] private string _esiStatusText = "IDLE";
-    [ObservableProperty] private string _redisqStatusText = "OFF";
+    [ObservableProperty] private string _liveFeedStatusText = "OFF";
     [ObservableProperty] private string _chatLogStatusText = "OFF";
     [ObservableProperty] private string _tqTime = "";
     [ObservableProperty] private string _holdHelperText = "";
@@ -127,7 +127,7 @@ public partial class MainViewModel : ObservableObject
         }
         _svc.Tracker.Track(auth, _appCts.Token);
         PrimaryActionLabel = "SETTINGS";
-        EnsureRedisQ();
+        EnsureLiveFeed();
         RestartChatLogWatcher();
         OnViewStateChanged();
     }
@@ -155,11 +155,11 @@ public partial class MainViewModel : ObservableObject
         _ = watcher.RunAsync(cts.Token);
     }
 
-    private void EnsureRedisQ()
+    private void EnsureLiveFeed()
     {
         if (_redisqStarted || IsDemo) return;
         _redisqStarted = true;
-        _ = _svc.RedisQ.RunAsync(_appCts.Token);
+        _ = _svc.LiveFeed.RunAsync(_appCts.Token);
     }
 
     // ---- commands ----
@@ -194,7 +194,7 @@ public partial class MainViewModel : ObservableObject
         IsDemo = true;
         PrimaryActionLabel = "SIMULATE JUMP";
         EsiStatusText = "DEMO";
-        RedisqStatusText = "DEMO";
+        LiveFeedStatusText = "DEMO";
         WindowTitle = "K162 Fleet Intel — Cold Static [CSTAT]";
         _demo = new Demo.DemoFleet(this, _svc.Wormholes);
         _demo.Start();
@@ -289,6 +289,9 @@ public partial class MainViewModel : ObservableObject
     {
         try
         {
+            // Stale-while-revalidate: paint whatever we have instantly, then fetch fresh.
+            if (_svc.Intel.GetCachedAny(vm.SolarSystemId) is { } stale)
+                OnUi(() => { if (vm.SolarSystemId == stale.SolarSystemId) vm.ApplyIntel(stale, LookbackLabel); });
             var intel = await _svc.Intel.GetIntelAsync(vm.SolarSystemId, Settings.Lookback, _appCts.Token);
             OnUi(() => { if (vm.SolarSystemId == intel.SolarSystemId) vm.ApplyIntel(intel, LookbackLabel); });
         }
@@ -434,7 +437,7 @@ public sealed record AppServices(
     SsoService Sso,
     Core.Esi.EsiClient Esi,
     ZkillClient Zkill,
-    RedisQListener RedisQ,
+    R2Z2Listener LiveFeed,
     WormholeDb Wormholes,
     IntelService Intel,
     FleetTracker Tracker,

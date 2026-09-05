@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
+using K162.Core.Caching;
 using K162.Core.Esi;
 using K162.Core.Zkill;
 
@@ -7,21 +9,37 @@ namespace K162.Core.Intel;
 /// <summary>
 /// Builds and caches per-system intel: wormhole metadata from the bundled db,
 /// kill history from zKillboard refs resolved through ESI, aggregated by IntelAggregator.
+///
+/// The cache is per SYSTEM (all pilots share it), 10-minute TTL. Killmail details are
+/// immutable and go through the disk-backed KillmailStore; intel snapshots persist too,
+/// so a restart paints instantly (stale-while-revalidate via GetCachedAny).
 /// </summary>
-public sealed class IntelService(EsiClient esi, ZkillClient zkill, WormholeDb wormholes)
+public sealed class IntelService(EsiClient esi, ZkillClient zkill, WormholeDb wormholes,
+    KillmailStore? killmailStore = null, string? snapshotPath = null)
 {
     private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(10);
     private const int KillmailFetchConcurrency = 8;
 
-    private readonly ConcurrentDictionary<int, SystemIntel> _cache = [];
-    private readonly ConcurrentDictionary<long, KillmailDetail?> _killmails = [];
+    private readonly ConcurrentDictionary<int, SystemIntel> _cache = LoadSnapshot(snapshotPath);
+    private readonly KillmailStore _killmails = killmailStore ?? new KillmailStore();
+    /// <summary>Killmails that failed to fetch this session — don't hammer ESI retrying them.</summary>
+    private readonly ConcurrentDictionary<long, byte> _failedFetches = [];
+    private int _snapshotSaving;
 
     /// <summary>Drops cached intel (e.g. when the lookback setting changes).</summary>
-    public void ClearCache() => _cache.Clear();
+    public void ClearCache()
+    {
+        _cache.Clear();
+        ScheduleSnapshotSave();
+    }
 
     public SystemIntel? GetCached(int systemId) =>
         _cache.TryGetValue(systemId, out var intel) && DateTimeOffset.UtcNow - intel.FetchedAt < CacheTtl
             ? intel : null;
+
+    /// <summary>Cached intel regardless of freshness — for painting instantly while a refresh runs.</summary>
+    public SystemIntel? GetCachedAny(int systemId) =>
+        _cache.TryGetValue(systemId, out var intel) ? intel : null;
 
     public async Task<SystemIntel> GetIntelAsync(int systemId, Lookback lookback, CancellationToken ct)
     {
@@ -76,6 +94,7 @@ public sealed class IntelService(EsiClient esi, ZkillClient zkill, WormholeDb wo
             FetchedAt = now,
         };
         _cache[systemId] = intel;
+        ScheduleSnapshotSave();
         return intel;
     }
 
@@ -107,6 +126,7 @@ public sealed class IntelService(EsiClient esi, ZkillClient zkill, WormholeDb wo
             FetchedAt = intel.FetchedAt,
         };
         _cache[kill.SolarSystemId] = updated;
+        ScheduleSnapshotSave();
         return updated;
     }
 
@@ -117,14 +137,60 @@ public sealed class IntelService(EsiClient esi, ZkillClient zkill, WormholeDb wo
             new ParallelOptions { MaxDegreeOfParallelism = KillmailFetchConcurrency, CancellationToken = ct },
             async (r, token) =>
             {
-                if (!_killmails.TryGetValue(r.KillmailId, out var detail))
+                if (_killmails.TryGet(r.KillmailId, out var cached))
                 {
-                    try { detail = await esi.GetKillmailAsync(r.KillmailId, r.Hash, token); }
-                    catch (Exception) { detail = null; }
-                    _killmails[r.KillmailId] = detail;
+                    results.Add(cached);
+                    return;
                 }
-                if (detail is not null) results.Add(detail);
+                if (_failedFetches.ContainsKey(r.KillmailId)) return;
+                KillmailDetail? detail = null;
+                try { detail = await esi.GetKillmailAsync(r.KillmailId, r.Hash, token); }
+                catch (Exception) { }
+                if (detail is not null)
+                {
+                    _killmails.Add(detail);
+                    results.Add(detail);
+                }
+                else
+                {
+                    _failedFetches.TryAdd(r.KillmailId, 0);
+                }
             });
         return [.. results];
+    }
+
+    // ---- intel snapshot persistence (best-effort, debounced) ----
+
+    private static ConcurrentDictionary<int, SystemIntel> LoadSnapshot(string? path)
+    {
+        if (path is null || !File.Exists(path)) return [];
+        try
+        {
+            var loaded = JsonSerializer.Deserialize<Dictionary<int, SystemIntel>>(File.ReadAllText(path));
+            return loaded is null ? [] : new ConcurrentDictionary<int, SystemIntel>(loaded);
+        }
+        catch (Exception)
+        {
+            return []; // corrupt snapshot — rebuild from live data
+        }
+    }
+
+    private void ScheduleSnapshotSave()
+    {
+        if (snapshotPath is null) return;
+        if (Interlocked.Exchange(ref _snapshotSaving, 1) == 1) return; // a save is already pending
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(5)); // coalesce bursts
+            Interlocked.Exchange(ref _snapshotSaving, 0);
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(snapshotPath)!);
+                var tmp = snapshotPath + ".tmp";
+                File.WriteAllText(tmp, JsonSerializer.Serialize(_cache.ToDictionary(kv => kv.Key, kv => kv.Value)));
+                File.Move(tmp, snapshotPath, overwrite: true);
+            }
+            catch (Exception) { /* best-effort */ }
+        });
     }
 }

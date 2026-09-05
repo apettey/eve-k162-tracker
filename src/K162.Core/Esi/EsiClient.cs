@@ -16,6 +16,25 @@ public sealed class EsiClient(HttpClient http)
     private readonly ConcurrentDictionary<int, string> _systemNames = [];
     private readonly ConcurrentDictionary<int, string> _typeNames = [];
     private readonly ConcurrentDictionary<long, EsiCorporation> _corps = [];
+    private int _nameCacheVersion;
+
+    /// <summary>Bumped whenever a name cache gains an entry; callers persist when it changes.</summary>
+    public int NameCacheVersion => _nameCacheVersion;
+
+    public void ImportNameCache(Caching.NameCacheSnapshot snapshot)
+    {
+        foreach (var (id, name) in snapshot.Systems) _systemNames.TryAdd(id, name);
+        foreach (var (id, name) in snapshot.Types) _typeNames.TryAdd(id, name);
+        foreach (var (id, pair) in snapshot.Corps)
+            if (pair.Length == 2) _corps.TryAdd(id, new EsiCorporation(pair[0], pair[1]));
+    }
+
+    public Caching.NameCacheSnapshot ExportNameCache() => new()
+    {
+        Systems = new Dictionary<int, string>(_systemNames),
+        Types = new Dictionary<int, string>(_typeNames),
+        Corps = _corps.ToDictionary(kv => kv.Key, kv => new[] { kv.Value.Name, kv.Value.Ticker }),
+    };
 
     private async Task<JsonDocument?> GetAsync(string path, string? accessToken, CancellationToken ct)
     {
@@ -63,6 +82,7 @@ public sealed class EsiClient(HttpClient http)
             doc.RootElement.GetProperty("name").GetString() ?? "",
             doc.RootElement.GetProperty("ticker").GetString() ?? "");
         _corps[corpId] = corp;
+        Interlocked.Increment(ref _nameCacheVersion);
         return corp;
     }
 
@@ -71,7 +91,7 @@ public sealed class EsiClient(HttpClient http)
         if (_systemNames.TryGetValue(systemId, out var cached)) return cached;
         using var doc = await GetAsync($"/universe/systems/{systemId}/", null, ct);
         var name = doc?.RootElement.GetProperty("name").GetString();
-        if (name is not null) _systemNames[systemId] = name;
+        if (name is not null) { _systemNames[systemId] = name; Interlocked.Increment(ref _nameCacheVersion); }
         return name;
     }
 
@@ -80,7 +100,7 @@ public sealed class EsiClient(HttpClient http)
         if (_typeNames.TryGetValue(typeId, out var cached)) return cached;
         using var doc = await GetAsync($"/universe/types/{typeId}/", null, ct);
         var name = doc?.RootElement.GetProperty("name").GetString();
-        if (name is not null) _typeNames[typeId] = name;
+        if (name is not null) { _typeNames[typeId] = name; Interlocked.Increment(ref _nameCacheVersion); }
         return name;
     }
 
@@ -100,7 +120,10 @@ public sealed class EsiClient(HttpClient http)
                 var name = el.GetProperty("name").GetString() ?? "";
                 result[id] = name;
                 if (el.GetProperty("category").GetString() == "inventory_type")
+                {
                     _typeNames[(int)id] = name;
+                    Interlocked.Increment(ref _nameCacheVersion);
+                }
             }
         }
         return result;
@@ -124,6 +147,7 @@ public sealed class EsiClient(HttpClient http)
             {
                 var id = el.GetProperty("id").GetInt32();
                 _systemNames[id] = el.GetProperty("name").GetString()!;
+                Interlocked.Increment(ref _nameCacheVersion);
                 return id;
             }
         }
