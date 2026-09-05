@@ -10,9 +10,15 @@
                     <controls:AutoFitPanel MinItemWidth="430" Gap="14"/>
                 </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
+            <!-- Collapse at the container level: offline pilots must not claim a grid slot. -->
+            <ItemsControl.ItemContainerStyle>
+                <Style TargetType="ContentPresenter">
+                    <Setter Property="Visibility" Value="{Binding Online, Converter={StaticResource BoolToVis}}"/>
+                </Style>
+            </ItemsControl.ItemContainerStyle>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Grid Visibility="{Binding Online, Converter={StaticResource BoolToVis}}">
+                    <Grid>
                         <Button Style="{StaticResource InvisibleButton}"
                                 Command="{Binding DataContext.FocusPilotCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                 CommandParameter="{Binding}">
