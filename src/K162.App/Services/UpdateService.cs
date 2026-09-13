@@ -42,9 +42,11 @@ public sealed class UpdateService
                     Changed?.Invoke();
                 }
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception) when (!ct.IsCancellationRequested)
             {
-                // Offline / rate limit — try again next interval.
+                // Offline / rate limit / HTTP timeout (surfaces as a TaskCanceledException
+                // unrelated to our token) — swallow and try again next interval. Only a
+                // real cancellation of our token is allowed to end the loop.
             }
             await Task.Delay(CheckInterval, ct);
         }
